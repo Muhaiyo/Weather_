@@ -1,232 +1,183 @@
 <template>
-  <div id="main" :class="isDay ? 'day' : 'night'">
-    <div class="container my-5" style="max-width: 400px; min-width: 360px">
-      <h1 class="title text-center">Weather in</h1>
-      <form class="search-location" v-on:submit.prevent="getWeather">
+  <div
+      id="app"
+      :class="typeof weather.main !== 'undefined' && weather.main.temp > 16 ? 'warm' : ''"
+  >
+    <main>
+      <div class="search-box">
         <input
-          type="text"
-          class="form-control text-muted form-rounded p-4 shadow-sm"
-          placeholder="What City?"
-          v-model="citySearch"
-          autocomplete="off"
-        />
-      </form>
-      <p class="text-center my-3" v-if="cityFound">No city found</p>
+            v-model="query"
+            @keypress="fetchWeather"
+            type="text"
+            class="search-bar"
+            placeholder="Поиск..."
+        >
+      </div>
+      
       <div
-        class="card rounded my-3 shadow-lg back-card overflow-hidden"
-        v-if="visible"
+          class="weather-wrap"
+          v-if="typeof weather.main !== 'undefined'"
       >
-        <!-- weather animation container -->
-        <div>
-          <div icon="sunny" v-if="clearSky" data-label="Sunny">
-            <span class="sun"></span>
-          </div>
-
-          <div icon="snowy" v-if="snowy" data-label="Chilly">
-            <ul>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-            </ul>
-          </div>
-
-          <div icon="stormy" v-if="stormy" data-label="Soggy">
-            <span class="cloud"></span>
-            <ul>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-              <li></li>
-            </ul>
-          </div>
-          <div icon="cloudy" v-if="cloudy" data-label="Perfect">
-            <span class="cloud"></span>
-            <span class="cloud"></span>
-          </div>
-          <div icon="nightmoon" v-if="clearNight" data-label="Cool!">
-            <span class="moon"></span>
-            <span class="meteor"></span>
-          </div>
+        <div class="location-box">
+          <div class="location">{{ weather.name }}, {{ weather.sys.country }}</div>
+          <div class="date">{{ dateBuilder() }}</div>
         </div>
-
-        <!-- Top of card starts here -->
-        <div class="card-top text-center" style="margin-bottom: 15rem">
-          <div class="city-name my-3">
-            <p>{{ weather.cityName }}</p>
-            <span>...</span>
-            <p class="">{{ weather.country }}</p>
-          </div>
-        </div>
-        <!-- top of card ends here -->
-
-        <!--card middle body, card body used cos I want to just update the innerHTML -->
-        <div class="card-body">
-          <!-- card middle starts here -->
-          <div class="card-mid">
-            <div class="row">
-              <div class="col-12 text-center temp">
-                <span>{{ weather.temperature }}&deg;C</span>
-                <p class="my-4">{{ weather.description }}</p>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col d-flex justify-content-between px-5 mx-5">
-                <p>
-                  <img src="./assets/down.svg" alt="" />
-                  {{ weather.lowTemp }}&deg;C
-                </p>
-                <p>
-                  <img src="./assets/up.svg" alt="" />
-                  {{ weather.highTemp }}&deg;C
-                </p>
-              </div>
-            </div>
-          </div>
-          <!-- card middle ends here -->
-
-          <!-- card bottom starts here -->
-          <div class="card-bottom px-5 py-4 row">
-            <div class="col text-center">
-              <p>{{ weather.feelsLike }}&deg;C</p>
-              <span>Feels like</span>
-            </div>
-            <div class="col text-center">
-              <p>{{ weather.humidity }}%</p>
-              <span>humidity</span>
-            </div>
-          </div>
-
-          <!-- card bottom ends here -->
+        
+        <div class="weather-box">
+          <div class="temp">{{ Math.round(weather.main.temp) }} °C</div>
+          <div class="weather">{{ weather.weather[0].main }}</div>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script>
 export default {
+  name: 'App',
+  
   data() {
     return {
-      cityFound: false,
-      visible: false,
-      stormy: false,
-      cloudy: false,
-      clearSky: false,
-      clearNight: false,
-      snowy: false,
-      isDay: true,
-      citySearch: "",
-      weather: {
-        cityName: "Gwarinpa",
-        country: "NG",
-        temperature: 12,
-        description: "Clouds everywhere",
-        lowTemp: "19",
-        highTemp: "30",
-        feelsLike: "20",
-        humidity: "55",
-      },
-    };
+      API_KEY:  '67d8a54513d0c00719d6884c4136ba51',
+      url_base: 'https://api.openweathermap.org/data/2.5/',
+      query:    '',
+      weather:  {},
+    }
   },
+  
   methods: {
-    getWeather: async function () {
-      console.log(this.citySearch);
-      const key = process.env.VUE_APP_API_KEY
-      const baseURL = `https://api.openweathermap.org/data/2.5/weather?q=${this.citySearch}&appid=${key}&units=metric`;
-      //fetch weather
-      try {
-        const response = await fetch(baseURL);
-        const data = await response.json();
-        console.log(data);
-        this.citySearch = "";
-        this.weather.cityName = data.name;
-        this.weather.country = data.sys.country;
-        this.weather.temperature = Math.round(data.main.temp);
-        this.weather.description = data.weather[0].description;
-        this.weather.lowTemp = Math.round(data.main.temp_min);
-        this.weather.highTemp = Math.round(data.main.temp_max);
-        this.weather.feelsLike = Math.round(data.main.feels_like);
-        this.weather.humidity = Math.round(data.main.humidity);
-        const timeOfDay = data.weather[0].icon;
-        ///check for time of day
-        if (timeOfDay.includes("n")) {
-          this.isDay = false;
-        } else {
-          this.isDay = true;
-        }
-        const mainWeather = data.weather[0].main;
-        //check weather animations
-        if (mainWeather.includes("Clouds")) {
-          this.stormy = false;
-          this.cloudy = true;
-          this.clearSky = false;
-          this.clearNight = false;
-          this.snowy = false;
-        }
-        if (mainWeather.includes("Clouds")) {
-          this.stormy = false;
-          this.cloudy = true;
-          this.clearSky = false;
-          this.clearNight = false;
-          this.snowy = false;
-        }
-        if (
-          mainWeather.includes("Thunderstorm") ||
-          mainWeather.includes("Rain")
-        ) {
-          this.stormy = true; 
-          this.cloudy = false;
-          this.clearSky = false;
-          this.clearNight = false;
-          this.snowy = false;
-        }
-        if (mainWeather.includes("Clear") && this.isDay) {
-          this.stormy = false;
-          this.cloudy = false;
-          this.clearSky = true;
-          this.clearNight = false;
-          this.snowy = false;
-        }
-        if (mainWeather.includes("Clouds") && !this.isDay) {
-          this.stormy = false;
-          this.cloudy = false;
-          this.clearSky = false;
-          this.clearNight = true;
-          this.snowy = false;
-        }
-        if (mainWeather.includes("Snow")) {
-          this.stormy = false;
-          this.cloudy = false;
-          this.clearSky = false;
-          this.clearNight = false;
-          this.snowy = true;
-        }
-        this.visible = true;
-        this.cityFound = false;
-      } catch (error) {
-        console.log(error);
-        this.cityFound = true;
-        this.visible = false;
+    fetchWeather(event) {
+      if (event.key === 'Enter') {
+        this.fetchToAPI()
       }
     },
+    
+    fetchToAPI() {
+      fetch(`${this.url_base}weather?q=${this.query ? this.query : 'Moscow'}&units=metric&appid=${this.API_KEY}`)
+          .then(res => res.json())
+          .then(this.setResults)
+          .catch(err => console.log(err))
+    },
+    
+    setResults(results) {
+      this.weather = results
+    },
+    
+    dateBuilder() {
+      let d      = new Date(),
+          months = ['Январь', 'Февраль', 'Март', 'Апрель',
+                    'Май', 'Июнь', 'Июль', 'Август',
+                    'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+          days   = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+                    'Пятница', 'Суббота', 'Воскресенье'],
+          day    = days[d.getDay()],
+          date   = d.getDate(),
+          month  = months[d.getMonth()],
+          year   = d.getFullYear();
+      
+      return `${day} ${date} ${month} ${year}`
+    },
   },
-};
+  
+  mounted() {
+    this.fetchToAPI()
+  },
+}
 </script>
 
-<style scoped>
+<style>
+* {
+  margin:     0;
+  padding:    0;
+  box-sizing: border-box;
+}
 
-@import "./assets/custom.css";
-@import "./assets/animation.css";
+body {
+  font-family: "Montserrat", sans-serif;
+}
 
+#app {
+  background-image:    url("./assets/cold.jpg");
+  background-size:     cover;
+  background-position: bottom;
+  transition:          .4s;
+}
+
+#app.warm {
+  background-image: url("./assets/warm.jpg");
+}
+
+main {
+  min-height:       100vh;
+  padding:          25px;
+  background-image: linear-gradient(to bottom, rgba(0, 0, 0, .35), rgba(0, 0, 0, .75));
+}
+
+.search-box {
+  width:         100%;
+  margin-bottom: 30px;
+}
+
+.search-box .search-bar {
+  display:          block;
+  width:            100%;
+  padding:          15px;
+  color:            #313131;
+  font-size:        20px;
+  appearance:       none;
+  border:           none;
+  outline:          none;
+  background:       none;
+  box-shadow:       0 0 8px rgba(0, 0, 0, .25);
+  background-color: rgba(255, 255, 255, .5);
+  border-radius:    0 16px 0 16px;
+  transition:       .4s;
+}
+
+.search-box .search-bar:focus {
+  box-shadow:       0 0 16px rgba(0, 0, 0, .25);
+  background-color: rgba(255, 255, 255, .75);
+  border-radius:    16px 0 16px 0;
+}
+
+.location-box .location {
+  color:       #fff;
+  font-size:   32px;
+  font-weight: 500;
+  text-align:  center;
+  text-shadow: 1px 3px rgba(0, 0, 0, .25);
+}
+
+.location-box .date {
+  color:       #fff;
+  font-size:   20px;
+  font-weight: 300;
+  font-style:  italic;
+  text-align:  center;
+}
+
+.weather-box {
+  text-align: center;
+}
+
+.weather-box .temp {
+  display:          inline-block;
+  padding:          10px 25px;
+  color:            #ffffff;
+  font-size:        102px;
+  font-weight:      900;
+  text-shadow:      3px 6px rgba(0, 0, 0, .25);
+  background-color: rgba(255, 255, 255, .25);
+  border-radius:    16px;
+  margin:           30px 0;
+  box-shadow:       3px 6px rgba(0, 0, 0, .25);
+}
+
+.weather-box .weather {
+  color:       white;
+  font-size:   48px;
+  font-weight: 700;
+  font-style:  italic;
+  text-shadow: 3px 6px rgba(0, 0, 0, .25);
+}
 </style>
